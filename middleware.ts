@@ -1,20 +1,22 @@
 // middleware.ts
 import { NextResponse } from 'next/server';
-import { NextRequest } from 'next/server';
-import { getUser } from '../frontend/src/components/SupabaseClient'; // Ganti dengan fungsi untuk mendapatkan user dari Supabase
+import type { NextRequest } from 'next/server';
 
-export async function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
-  
-  // Cek apakah user terautentikasi
-  const user = await getUser(); // Dapatkan user dari Supabase atau cookies
+export function middleware(request: NextRequest) {
+  const token = request.cookies.get('token'); // Mengambil token dari cookies
 
+  // Daftar route yang tidak memerlukan autentikasi
+  const publicPaths = ['/login', '/'];
 
-  const protectedRoutes = ['/home', '/monitor', '/dokumen', '/user'];
-
-  if (!user && protectedRoutes.includes(pathname)) {
-    return NextResponse.redirect(new URL('/login', req.url)); // Redirect ke halaman login
+  // Cek jika user mencoba mengakses route yang dilindungi
+  if (!token && !publicPaths.includes(request.nextUrl.pathname)) {
+    // Redirect ke halaman login jika tidak terautentikasi
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  return NextResponse.next(); // Lanjutkan ke halaman yang diminta
+  return NextResponse.next(); 
 }
+
+export const config = {
+  matcher: ['/home', '/monitor', '/dokumen', '/user', '/logout'], // Route yang ingin dilindungi
+};
